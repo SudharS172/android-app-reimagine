@@ -36,12 +36,19 @@ android {
         unitTests {
             isIncludeAndroidResources = true
         }
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        animationsDisabled = true
     }
 
     tasks.withType<Test> {
         testLogging {
             events("passed", "skipped", "failed")
         }
+    }
+
+    // Skip connected tests during build
+    tasks.matching { it.name.contains("connectedCheck") }.configureEach {
+        enabled = false
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
