@@ -63,17 +63,37 @@ class GeminiService(apiKey: String) {
             You are an AI assistant that helps users navigate through Android apps and perform actions.
             Based on the user's command, you should decide what UI actions to take.
             
+            IMPORTANT: You must respond with a complete, valid JSON object and nothing else.
+            Do not include any explanatory text outside the JSON.
+            
             Command: $command
             
-            Respond in the following JSON format:
+            Response format:
+            For navigation commands (e.g., "open Chrome", "go to Settings"):
             {
-                "type": "NAVIGATE" | "CLICK" | "TYPE" | "SCROLL" | "ERROR",
-                "message": "Your explanation of what you're going to do",
+                "type": "NAVIGATE",
+                "message": "Brief description of the navigation action",
                 "action": {
-                    "type": "NAVIGATE" | "CLICK" | "TYPE" | "SCROLL",
-                    "target": "Button/element to interact with or text to type",
-                    "coordinates": [x, y] (optional, for click actions)
+                    "type": "NAVIGATE",
+                    "target": "exact name of the app or element to navigate to"
                 }
+            }
+            
+            For click actions (e.g., "tap button", "press OK"):
+            {
+                "type": "CLICK",
+                "message": "Brief description of the click action",
+                "action": {
+                    "type": "CLICK",
+                    "target": "exact text or description of what to click"
+                }
+            }
+            
+            For errors or unknown commands:
+            {
+                "type": "ERROR",
+                "message": "Error description",
+                "action": null
             }
         """.trimIndent()
     }
@@ -83,54 +103,85 @@ class GeminiService(apiKey: String) {
             You are an AI assistant that helps users navigate through Android apps and perform actions.
             Analyze the provided screenshot and the user's command to decide what UI action to take.
             
+            IMPORTANT: You must respond with a complete, valid JSON object and nothing else.
+            Do not include any explanatory text outside the JSON.
+            
             Command: $command
             
-            Look at the screenshot and identify UI elements that match the user's intent.
-            Consider buttons, text fields, links, and other interactive elements.
-            
-            Respond in the following JSON format:
+            Response format:
+            For navigation commands (e.g., "open Chrome", "go to Settings"):
             {
-                "type": "NAVIGATE" | "CLICK" | "TYPE" | "SCROLL" | "ERROR",
-                "message": "Your explanation of what you see and what action you'll take",
+                "type": "NAVIGATE",
+                "message": "Brief description of what you see and the navigation action",
                 "action": {
-                    "type": "NAVIGATE" | "CLICK" | "TYPE" | "SCROLL",
-                    "target": "Button/element to interact with or text to type",
-                    "coordinates": [x, y] (required for click actions, based on visible elements)
+                    "type": "NAVIGATE",
+                    "target": "exact name of the visible app or element to navigate to"
                 }
+            }
+            
+            For click actions (e.g., "tap button", "press OK"):
+            {
+                "type": "CLICK",
+                "message": "Brief description of what you see and the click action",
+                "action": {
+                    "type": "CLICK",
+                    "target": "exact visible text or element description to click"
+                }
+            }
+            
+            For errors or when target is not visible:
+            {
+                "type": "ERROR",
+                "message": "Description of what you see and why the action cannot be performed",
+                "action": null
             }
         """.trimIndent()
     }
 
     private fun parseResponse(response: String): AIResponse {
         try {
-            // Extract JSON from the response
-            val jsonPattern = """\{[^}]*\}""".toRegex()
-            val jsonMatch = jsonPattern.find(response)
-            val jsonStr = jsonMatch?.value ?: return AIResponse(
-                type = ResponseType.ERROR,
-                message = "Invalid response format",
-                action = null
-            )
+            // Find the complete JSON object in the response
+            val start = response.indexOf("{")
+            val end = response.lastIndexOf("}") + 1
+            if (start == -1 || end == -1 || end <= start) {
+                return AIResponse(
+                    type = ResponseType.ERROR,
+                    message = "Invalid response format: No valid JSON found",
+                    action = null
+                )
+            }
 
+            val jsonStr = response.substring(start, end)
+            
             // Parse JSON
             val json = org.json.JSONObject(jsonStr)
-            val type = json.getString("type")
-            val message = json.getString("message")
+            val type = json.optString("type", "ERROR")
+            val message = json.optString("message", "Unknown message")
             
-            val action = if (json.has("action")) {
+            val action = if (json.has("action") && !json.isNull("action")) {
                 val actionJson = json.getJSONObject("action")
                 UIAction(
-                    type = ActionType.valueOf(actionJson.getString("type")),
-                    target = actionJson.getString("target"),
-                    coordinates = if (actionJson.has("coordinates")) {
+                    type = try {
+                        ActionType.valueOf(actionJson.optString("type", "NAVIGATE"))
+                    } catch (e: IllegalArgumentException) {
+                        ActionType.NAVIGATE
+                    },
+                    target = actionJson.optString("target", ""),
+                    coordinates = if (actionJson.has("coordinates") && !actionJson.isNull("coordinates")) {
                         val coords = actionJson.getJSONArray("coordinates")
-                        Pair(coords.getDouble(0).toFloat(), coords.getDouble(1).toFloat())
+                        if (coords.length() >= 2) {
+                            Pair(coords.optDouble(0, 0.0).toFloat(), coords.optDouble(1, 0.0).toFloat())
+                        } else null
                     } else null
                 )
             } else null
 
             return AIResponse(
-                type = ResponseType.valueOf(type),
+                type = try {
+                    ResponseType.valueOf(type)
+                } catch (e: IllegalArgumentException) {
+                    ResponseType.ERROR
+                },
                 message = message,
                 action = action
             )

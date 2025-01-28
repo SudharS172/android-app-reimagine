@@ -64,7 +64,11 @@ class ChatViewModel(
                 _messages.value = _messages.value + processingMessage
 
                 // Capture screenshot if available
-                val screenshot = screenCaptureManager.captureScreen()
+                val screenshot = try {
+                    screenCaptureManager.captureScreen()
+                } catch (e: Exception) {
+                    null
+                }
 
                 // Process with Gemini
                 val response = geminiService.processCommand(text, screenshot)
@@ -73,31 +77,49 @@ class ChatViewModel(
                 val updatedMessages = _messages.value.toMutableList()
                 val processingIndex = updatedMessages.indexOf(processingMessage)
                 if (processingIndex != -1) {
+                    val status = when {
+                        response.type == ResponseType.ERROR -> MessageStatus.ERROR
+                        automationService == null -> {
+                            response.message + "\n\nError: Accessibility service not enabled. Please enable it in Settings."
+                            MessageStatus.ERROR
+                        }
+                        else -> MessageStatus.ACTION_IN_PROGRESS
+                    }
+                    
                     updatedMessages[processingIndex] = processingMessage.copy(
                         content = response.message,
-                        status = if (response.type == ResponseType.ERROR) 
-                            MessageStatus.ERROR 
-                        else 
-                            MessageStatus.ACTION_IN_PROGRESS
+                        status = status
                     )
                     _messages.value = updatedMessages
-                }
 
-                // Execute action if available
-                response.action?.let { action ->
-                    val success = automationService?.performAction(
-                        action = action.type.name,
-                        target = action.target
-                    ) ?: false
-                    viewModelScope.launch {
-                        updateActionStatus(processingIndex, success)
+                    // Execute action if available and service is ready
+                    if (response.type != ResponseType.ERROR && automationService != null) {
+                        response.action?.let { action ->
+                            try {
+                                val success = automationService?.performAction(
+                                    action = action.type.name,
+                                    target = action.target
+                                ) ?: false
+                                
+                                updateActionStatus(
+                                    messageIndex = processingIndex,
+                                    success = success,
+                                    errorMessage = if (!success) "Failed to perform action: ${action.type} on ${action.target}" else null
+                                )
+                            } catch (e: Exception) {
+                                updateActionStatus(
+                                    messageIndex = processingIndex,
+                                    success = false,
+                                    errorMessage = "Error performing action: ${e.message}"
+                                )
+                            }
+                        }
                     }
                 }
-
             } catch (e: Exception) {
-                // Add error message
+                // Add error message with more details
                 _messages.value = _messages.value + ChatMessage(
-                    content = "Error: ${e.message}",
+                    content = "Error processing request: ${e.message}\n\nPlease try again or check if all permissions are granted.",
                     isUser = false,
                     status = MessageStatus.ERROR
                 )
@@ -107,10 +129,12 @@ class ChatViewModel(
         }
     }
 
-    private fun updateActionStatus(messageIndex: Int, success: Boolean) {
+    private fun updateActionStatus(messageIndex: Int, success: Boolean, errorMessage: String? = null) {
         val updatedMessages = _messages.value.toMutableList()
         if (messageIndex != -1 && messageIndex < updatedMessages.size) {
-            updatedMessages[messageIndex] = updatedMessages[messageIndex].copy(
+            val currentMessage = updatedMessages[messageIndex]
+            updatedMessages[messageIndex] = currentMessage.copy(
+                content = if (errorMessage != null) "${currentMessage.content}\n\n$errorMessage" else currentMessage.content,
                 status = if (success) MessageStatus.ACTION_COMPLETED else MessageStatus.ACTION_FAILED
             )
             _messages.value = updatedMessages
