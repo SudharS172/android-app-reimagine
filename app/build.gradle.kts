@@ -31,6 +31,18 @@ android {
         disable += "ProtectedPermissions"
         abortOnError = false
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+
+    tasks.withType<Test> {
+        testLogging {
+            events("passed", "skipped", "failed")
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
