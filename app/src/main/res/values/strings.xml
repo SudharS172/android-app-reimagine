@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Andorid App For Reimagine</string>
+    <string name="accessibility_service_description">AI-powered UI automation service that helps navigate through apps and perform actions based on user commands.</string>
+</resources>
