@@ -51,6 +51,11 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install Emulator Package
+        run: |
+          echo "y" | sdkmanager "system-images;android-33;google_apis;x86_64"
+          echo "no" | avdmanager create avd -n test_device -k "system-images;android-33;google_apis;x86_64" --force
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
