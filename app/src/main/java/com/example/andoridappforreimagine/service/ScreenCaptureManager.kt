@@ -68,32 +68,61 @@ class ScreenCaptureManager(private val context: Context) {
     }
 
     suspend fun captureScreen(): Bitmap? = withContext(Dispatchers.IO) {
-        suspendCancellableCoroutine { continuation ->
+        var retryCount = 0
+        val maxRetries = 3
+        
+        while (retryCount < maxRetries) {
             try {
+                if (mediaProjection == null || imageReader == null) {
+                    throw IllegalStateException("Screen capture not initialized. Call initialize() first.")
+                }
+
                 val image = imageReader?.acquireLatestImage()
                 if (image != null) {
-                    val planes = image.planes
-                    val buffer = planes[0].buffer
-                    val pixelStride = planes[0].pixelStride
-                    val rowStride = planes[0].rowStride
-                    val rowPadding = rowStride - pixelStride * screenWidth
+                    try {
+                        val planes = image.planes
+                        val buffer = planes[0].buffer
+                        val pixelStride = planes[0].pixelStride
+                        val rowStride = planes[0].rowStride
+                        val rowPadding = rowStride - pixelStride * screenWidth
 
-                    val bitmap = Bitmap.createBitmap(
-                        screenWidth + rowPadding / pixelStride,
-                        screenHeight,
-                        Bitmap.Config.ARGB_8888
-                    )
-                    bitmap.copyPixelsFromBuffer(buffer)
-                    image.close()
+                        // Create bitmap with correct dimensions
+                        val bitmap = Bitmap.createBitmap(
+                            screenWidth,  // Remove padding to get exact screen size
+                            screenHeight,
+                            Bitmap.Config.ARGB_8888
+                        )
 
-                    continuation.resume(bitmap)
+                        // Copy only the screen area, excluding padding
+                        buffer.position(0)
+                        for (row in 0 until screenHeight) {
+                            buffer.position(row * rowStride)
+                            bitmap.copyPixelsFromBuffer(buffer)
+                            // Skip the padding
+                            buffer.position(buffer.position() + rowPadding)
+                        }
+
+                        return@withContext bitmap
+                    } finally {
+                        image.close()
+                    }
                 } else {
-                    continuation.resume(null)
+                    retryCount++
+                    if (retryCount < maxRetries) {
+                        delay(500) // Wait before retry
+                        continue
+                    }
                 }
             } catch (e: Exception) {
-                continuation.resume(null)
+                retryCount++
+                if (retryCount < maxRetries) {
+                    delay(500) // Wait before retry
+                    continue
+                }
+                throw e
             }
         }
+        return@withContext null
     }
 
     fun release() {
