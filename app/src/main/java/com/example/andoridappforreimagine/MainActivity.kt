@@ -26,6 +26,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.andoridappforreimagine.config.AppConfig
 import com.example.andoridappforreimagine.service.ScreenCaptureManager
+import com.example.andoridappforreimagine.service.UIAutomationService
 import com.example.andoridappforreimagine.ui.components.ChatScreen
 import com.example.andoridappforreimagine.ui.theme.AndoridAppForReimagineTheme
 import com.example.andoridappforreimagine.viewmodel.ChatViewModel
@@ -123,14 +124,14 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    ChatScreen(
-                        viewModel = viewModel(
-                            factory = ViewModelFactory(
-                                context = applicationContext,
-                                geminiApiKey = AppConfig.GEMINI_API_KEY
-                            )
+                    val viewModel = viewModel<ChatViewModel>(
+                        factory = ViewModelFactory(
+                            context = applicationContext,
+                            geminiApiKey = AppConfig.GEMINI_API_KEY
                         )
                     )
+
+                    ChatScreen(viewModel = viewModel)
                 }
             }
         }
@@ -173,6 +174,19 @@ class MainActivity : ComponentActivity() {
     private fun openAccessibilitySettings() {
         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
         startActivity(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (isAccessibilityServiceEnabled()) {
+            UIAutomationService.getInstance()?.let { service ->
+                // Update ViewModel with automation service
+                val viewModel = (application as? ViewModelProvider.Factory)?.let {
+                    ViewModelProvider(this, it)[ChatViewModel::class.java]
+                }
+                viewModel?.setAutomationService(service)
+            }
+        }
     }
 
     override fun onDestroy() {
