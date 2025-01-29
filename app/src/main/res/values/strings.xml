@@ -1,4 +1,28 @@
 <resources>
     <string name="app_name">Andorid App For Reimagine</string>
     <string name="accessibility_service_description">AI-powered UI automation service that helps navigate through apps and perform actions based on user commands.</string>
+    
+    <!-- Permission Dialog Strings -->
+    <string name="permission_dialog_title">Required Permissions</string>
+    <string name="permission_dialog_message">This app needs additional permissions to function properly.</string>
+    <string name="permission_dialog_grant">Grant Permissions</string>
+    <string name="permission_dialog_exit">Exit</string>
+
+    <!-- Accessibility Dialog Strings -->
+    <string name="accessibility_dialog_title">Enable Accessibility Service</string>
+    <string name="accessibility_dialog_message">This app requires accessibility service to function. Would you like to enable it now?</string>
+    <string name="accessibility_dialog_enable">Enable</string>
+    
+    <!-- Chat UI Strings -->
+    <string name="input_hint">Type a command…</string>
+    <string name="send_button">Send</string>
+    <string name="processing_message">Processing your request…</string>
+    <string name="action_in_progress">Performing action…</string>
+    <string name="action_completed">✓ Completed</string>
+    <string name="action_failed">✗ Failed</string>
+    <string name="error_generic">Error</string>
+    
+    <!-- Service Status Messages -->
+    <string name="service_not_initialized">Screen capture not initialized. Please grant permission.</string>
+    <string name="service_accessibility_required">Accessibility service not enabled. Please enable it in Settings.</string>
 </resources>

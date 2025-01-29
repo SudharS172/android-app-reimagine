@@ -7,7 +7,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.andoridappforreimagine.R
 import com.example.andoridappforreimagine.data.ChatMessage
 import com.example.andoridappforreimagine.data.MessageStatus
 import com.example.andoridappforreimagine.viewmodel.ChatViewModel
@@ -42,7 +44,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 value = viewModel.inputText.value,
                 onValueChange = { viewModel.onInputTextChanged(it) },
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Type a command...") },
+                placeholder = { Text(stringResource(R.string.input_hint)) },
                 enabled = !viewModel.isProcessing.value
             )
 
@@ -52,7 +54,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 onClick = { viewModel.sendMessage() },
                 enabled = !viewModel.isProcessing.value && viewModel.inputText.value.isNotBlank()
             ) {
-                Text("Send")
+                Text(stringResource(R.string.send_button))
             }
         }
     }
@@ -96,7 +98,7 @@ fun MessageBubble(message: ChatMessage) {
                     }
                     MessageStatus.ERROR -> {
                         Text(
-                            text = "Error",
+                            text = stringResource(R.string.error_generic),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall
                         )
@@ -108,20 +110,20 @@ fun MessageBubble(message: ChatMessage) {
                                 .padding(top = 4.dp)
                         )
                         Text(
-                            text = "Performing action...",
+                            text = stringResource(R.string.action_in_progress),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
                     MessageStatus.ACTION_COMPLETED -> {
                         Text(
-                            text = "✓ Completed",
+                            text = stringResource(R.string.action_completed),
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
                     MessageStatus.ACTION_FAILED -> {
                         Text(
-                            text = "✗ Failed",
+                            text = stringResource(R.string.action_failed),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall
                         )

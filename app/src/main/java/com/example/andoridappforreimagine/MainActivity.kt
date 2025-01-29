@@ -11,6 +11,8 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.res.stringResource
+import com.example.andoridappforreimagine.R
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
@@ -85,19 +87,19 @@ class MainActivity : ComponentActivity() {
                     if (showAccessibilityDialog) {
                         AlertDialog(
                             onDismissRequest = { },
-                            title = { Text("Enable Accessibility Service") },
-                            text = { Text("This app requires accessibility service to function. Would you like to enable it now?") },
+                            title = { Text(stringResource(R.string.accessibility_dialog_title)) },
+                            text = { Text(stringResource(R.string.accessibility_dialog_message)) },
                             confirmButton = {
                                 Button(onClick = {
                                     showAccessibilityDialog = false
                                     openAccessibilitySettings()
                                 }) {
-                                    Text("Enable")
+                                    Text(stringResource(R.string.accessibility_dialog_enable))
                                 }
                             },
                             dismissButton = {
                                 Button(onClick = { finish() }) {
-                                    Text("Exit")
+                                    Text(stringResource(R.string.permission_dialog_exit))
                                 }
                             }
                         )
@@ -106,19 +108,19 @@ class MainActivity : ComponentActivity() {
                     if (showPermissionDialog) {
                         AlertDialog(
                             onDismissRequest = { },
-                            title = { Text("Required Permissions") },
-                            text = { Text("This app needs additional permissions to function properly.") },
+                            title = { Text(stringResource(R.string.permission_dialog_title)) },
+                            text = { Text(stringResource(R.string.permission_dialog_message)) },
                             confirmButton = {
                                 Button(onClick = {
                                     showPermissionDialog = false
                                     requestPermissions()
                                 }) {
-                                    Text("Grant Permissions")
+                                    Text(stringResource(R.string.permission_dialog_grant))
                                 }
                             },
                             dismissButton = {
                                 Button(onClick = { finish() }) {
-                                    Text("Exit")
+                                    Text(stringResource(R.string.permission_dialog_exit))
                                 }
                             }
                         )
