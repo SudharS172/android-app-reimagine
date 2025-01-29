@@ -84,7 +84,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.google.generativeai)
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
