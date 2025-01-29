@@ -26,6 +26,9 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Run Lint
+        run: ./gradlew lint
+
       - name: Build Debug APK
         run: ./gradlew assembleDebug
 
@@ -40,4 +43,6 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: build-reports
-          path: app/build/reports/
+          path: |
+            app/build/reports/
+            app/build/outputs/logs/
