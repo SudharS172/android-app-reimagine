@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import kotlinx.coroutines.flow.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -29,7 +29,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val messages by viewModel.messages.collectAsState()
+            val messages by viewModel.messages.collectAsStateWithLifecycle()
             items(messages) { message ->
                 MessageBubble(message)
             }
@@ -43,8 +43,8 @@ fun ChatScreen(viewModel: ChatViewModel) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             var text by remember { mutableStateOf("") }
-            val inputText by viewModel.inputText.collectAsState()
-            val isProcessing by viewModel.isProcessing.collectAsState()
+            val inputText by viewModel.inputText.collectAsStateWithLifecycle()
+            val isProcessing by viewModel.isProcessing.collectAsStateWithLifecycle()
 
             LaunchedEffect(inputText) {
                 text = inputText
