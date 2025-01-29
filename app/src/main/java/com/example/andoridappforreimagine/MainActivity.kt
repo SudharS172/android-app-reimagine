@@ -12,6 +12,11 @@ import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.DataOutputStream
 import com.example.andoridappforreimagine.R
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -35,6 +40,8 @@ import com.example.andoridappforreimagine.viewmodel.ChatViewModel
 
 class MainActivity : ComponentActivity() {
     private lateinit var screenCaptureManager: ScreenCaptureManager
+    private var showRootDialog by mutableStateOf(false)
+
     private var mediaProjectionResultLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -126,6 +133,22 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    if (showRootDialog) {
+                        AlertDialog(
+                            onDismissRequest = { },
+                            title = { Text("Root Access Required") },
+                            text = { Text("This app requires root access to function properly. Please root your device and grant root access to the app.") },
+                            confirmButton = {
+                                Button(onClick = {
+                                    showRootDialog = false
+                                    finish()
+                                }) {
+                                    Text("Exit")
+                                }
+                            }
+                        )
+                    }
+
                     val viewModel = viewModel<ChatViewModel>(
                         factory = ViewModelFactory(
                             context = applicationContext,
@@ -180,13 +203,34 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (isAccessibilityServiceEnabled()) {
-            UIAutomationService.getInstance()?.let { service ->
-                // Update ViewModel with automation service
-                val viewModel = (application as? ViewModelProvider.Factory)?.let {
-                    ViewModelProvider(this, it)[ChatViewModel::class.java]
+        checkRootAccess()
+    }
+
+    private fun checkRootAccess() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val process = Runtime.getRuntime().exec("su")
+                val outputStream = DataOutputStream(process.outputStream)
+                outputStream.writeBytes("exit\n")
+                outputStream.flush()
+                
+                val exitValue = process.waitFor()
+                withContext(Dispatchers.Main) {
+                    if (exitValue == 0) {
+                        // Root access granted
+                        UIAutomationService.getInstance()?.let { service ->
+                            val viewModel = ViewModelProvider(this@MainActivity)[ChatViewModel::class.java]
+                            viewModel.setAutomationService(service)
+                        }
+                    } else {
+                        // Root access denied
+                        showRootDialog = true
+                    }
                 }
-                viewModel?.setAutomationService(service)
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    showRootDialog = true
+                }
             }
         }
     }
