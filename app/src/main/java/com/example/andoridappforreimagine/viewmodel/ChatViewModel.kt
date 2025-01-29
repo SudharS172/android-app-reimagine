@@ -23,7 +23,16 @@ class ChatViewModel(
     val messages: StateFlow<List<ChatMessage>> = _messages.asStateFlow()
 
     private val _inputText = MutableStateFlow("")
-    val inputText: StateFlow<String> = _inputText.asStateFlow()
+    val inputText = _inputText.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            // Initialize services
+            automationService?.let { service ->
+                setAutomationService(service)
+            }
+        }
+    }
 
     private val _isProcessing = MutableStateFlow(false)
     val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
@@ -37,7 +46,9 @@ class ChatViewModel(
     }
 
     fun onInputTextChanged(text: String) {
-        _inputText.value = text
+        viewModelScope.launch {
+            _inputText.value = text
+        }
     }
 
     fun sendMessage() {

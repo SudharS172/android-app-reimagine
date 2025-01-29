@@ -4,8 +4,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.flow.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -28,7 +29,8 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(viewModel.messages.value) { message ->
+            val messages by viewModel.messages.collectAsState()
+            items(messages) { message ->
                 MessageBubble(message)
             }
         }
@@ -40,19 +42,32 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 .padding(top = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            var text by remember { mutableStateOf("") }
+            val inputText by viewModel.inputText.collectAsState()
+            val isProcessing by viewModel.isProcessing.collectAsState()
+
+            LaunchedEffect(inputText) {
+                text = inputText
+            }
+
             OutlinedTextField(
-                value = viewModel.inputText.value,
-                onValueChange = { viewModel.onInputTextChanged(it) },
+                value = text,
+                onValueChange = { 
+                    text = it
+                    viewModel.onInputTextChanged(it)
+                },
                 modifier = Modifier.weight(1f),
                 placeholder = { Text(stringResource(R.string.input_hint)) },
-                enabled = !viewModel.isProcessing.value
+                enabled = !isProcessing,
+                singleLine = true,
+                maxLines = 1
             )
 
             Spacer(modifier = Modifier.width(8.dp))
 
             Button(
                 onClick = { viewModel.sendMessage() },
-                enabled = !viewModel.isProcessing.value && viewModel.inputText.value.isNotBlank()
+                enabled = !isProcessing && text.isNotBlank()
             ) {
                 Text(stringResource(R.string.send_button))
             }
