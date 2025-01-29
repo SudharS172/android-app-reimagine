@@ -23,13 +23,13 @@ fun ChatScreen(viewModel: ChatViewModel) {
             .padding(16.dp)
     ) {
         // Messages list
+        val messages by viewModel.messages.collectAsStateWithLifecycle()
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val messages by viewModel.messages.collectAsStateWithLifecycle()
             items(messages) { message ->
                 MessageBubble(message)
             }
